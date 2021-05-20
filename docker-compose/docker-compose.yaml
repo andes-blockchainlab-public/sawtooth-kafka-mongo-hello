@@ -73,20 +73,6 @@ services:
   #   depends_on:
   #     - validator
 
-  # intkey-tp-python:
-  #   image: hyperledger/sawtooth-intkey-tp-python:1.2.6
-  #   container_name: sawtooth-intkey-tp-python-default
-  #   depends_on:
-  #     - validator
-  #   entrypoint: intkey-tp-python -vv -C tcp://validator:4004
-
-  #xo-tp-python:
-    #image: hyperledger/sawtooth-xo-tp-python:1.2.6
-    #container_name: sawtooth-xo-tp-python-default
-    #depends_on:
-      #- validator
-    #entrypoint: xo-tp-python -vv -C tcp://validator:4004
-
   validator:
     image: hyperledger/sawtooth-validator:1.2.6
     container_name: sawtooth-validator-default
