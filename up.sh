@@ -15,8 +15,6 @@ gnome-terminal --tab -- bash -c "cd ./app;
   echo \"--mongo--\";
   node ./mongo-sample.js;
   echo \"--kafka--\";
-  node ./kafka-init.js;
-  sleep 1
   node ./kafka.js;
   bash"
 

@@ -1,7 +1,10 @@
 require('dotenv').config()
 
-const Kafka = require('node-rdkafka');
+const kafka = require('kafka-node');
+const Producer = kafka.Producer;
+const Consumer = kafka.Consumer;
 const _ = require('underscore');
+const util = require('util');
 
 console.log('KAFKA_CONSUMER:', process.env.KAFKA_CONSUMER);
 console.log('KAFKA_PRODUCER:', process.env.KAFKA_PRODUCER);
@@ -16,65 +19,152 @@ if(!process.env.KAFKA_PRODUCER){
   process.exit(1);
 }
 
-Promise.resolve()
-// kafkaInit()
-.then(async ()=>{
+const TOPIC = 'mytopic';
+let admin;
 
-  console.log('CREATED');
+let clientProducer;
+let clientConsumer;
+let producer;
+let consumer;
 
-  // Read from the librdtesting-01 topic... note that this creates a new stream on each call!
-  var streamConsumer = new Kafka.KafkaConsumer.createReadStream(
+async function getTopics(){
+  let res = await new Promise((resolve, reject) => {
+    admin.listTopics((err, res) => {
+      if(err){
+        return reject(err);
+      }
+      resolve(res);
+    });
+  });
+  // console.log(JSON.stringify(res, null, 2));
+  return _.chain(res[1].metadata)
+    .keys()
+    .filter(k => k[0] !== '_')
+    .value();
+}
+
+async function createTopic(topic){
+
+  var topics = [{
+    topic: topic,
+    partitions: 1,
+    replicationFactor: 1
+  }];
+  let r = await new Promise((resolve, reject) => {
+    admin.createTopics(topics,(err, res) => {
+      if(err){
+        return reject(err);
+      }
+      if(res.length > 0){
+        return reject(new Error(res[0].error));
+      }
+      resolve(res);
+    });
+  });
+
+  let allTopics = await getTopics();
+  if(!_.some(allTopics, t => t === topic)){
+    throw new Error(`topic ${topic} could not be created`);
+  }
+}
+
+function initProducer(){
+  clientProducer = new kafka.KafkaClient({kafkaHost: process.env.KAFKA_PRODUCER});
+  producer = new Producer(clientProducer);
+
+  return new Promise((resolve) => {
+    producer.on('ready', function () {
+      resolve();
+    });
+  });
+}
+
+function initConsumer(){
+  clientConsumer = new kafka.KafkaClient({kafkaHost: process.env.KAFKA_CONSUMER});
+  consumer = new Consumer(
+    clientConsumer,
+    [
+      { topic: TOPIC, partition: 0 }
+    ],
     {
-      'group.id': 'kafka',
-      'metadata.broker.list': process.env.KAFKA_CONSUMER,
-    }, {}, {
-      topics: ['mytopic']
-    });
+      autoCommit: false
+    }
+  );
 
-  let dataPromise = new Promise((resolve) => {
-    streamConsumer.on('data', function(message) {
-      console.log('Got message:');
-      console.log(message.value.toString());
-      streamConsumer.destroy();
-      resolve(message.value.toString());
-    });
+  // consumer = new Consumer(
+  //   clientConsumer,
+  //   [
+  //       { topic: TOPIC, partition: 0, offset: 1}
+  //   ],
+  //   {
+  //       autoCommit: false,
+  //       fromOffset: true
+  //   }
+  // );
+}
+
+
+module.exports = async () => {
+  const client = new kafka.KafkaClient({kafkaHost: process.env.KAFKA_PRODUCER});
+  admin = new kafka.Admin(client); // client must be KafkaClient
+  
+  let offset = new kafka.Offset(client);
+  offset.fetchLatestOffsets(['mybest'], (err, data) => {
+    console.log('----');
+    console.log(data);
+    console.log('----');
   });
- 
 
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  // Our producer with its Kafka brokers
-  // This call returns a new writable stream to our topic 'topic-name'
-  var streamProducer = Kafka.Producer.createWriteStream({
-    'group.id': 'kafka',
-    'metadata.broker.list': process.env.KAFKA_PRODUCER
-  }, {}, {
-    topic: 'mytopic'
-  });
-
-  // Writes a message to the stream
-  var queuedSuccess = streamProducer.write(Buffer.from('Awesome message'));
-
-  if (queuedSuccess) {
-    console.log('We queued our message!');
-  } else {
-    // Note that this only tells us if the stream's queue is full,
-    // it does NOT tell us if the message got to Kafka!  See below...
-    console.log('Too many messages in our queue already');
+  try{
+    await createTopic(TOPIC);
+  }
+  catch(err){
+    if(err.message === `Topic '${TOPIC}' already exists.`){
+      console.log(err.message);
+    }
+    else{
+      console.log(err);
+      process.exit(0);
+    }
   }
 
-  // NOTE: MAKE SURE TO LISTEN TO THIS IF YOU WANT THE STREAM TO BE DURABLE
-  // Otherwise, any error will bubble up as an uncaught exception.
-  streamProducer.on('error', function (err) {
-    // Here's where we'll know if something went wrong sending to Kafka
-    console.error('Error in our kafka stream');
-    console.error(err);
-  })
-  streamProducer.end();
+  await initProducer();
+  await initConsumer();
+  let success = false;
+  const payloads = [
+    { topic: TOPIC, messages: 'hi', partition: 0 }
+  ];
 
-  return await dataPromise;
-}).then(()=>{
-  console.log('END');
-  // consumer.disconnect();
-  // client.disconnect();
-});
+  producer.send(payloads, function (err, data) {
+    if(err){
+      return console.log(err);
+    }
+    // console.log(data);
+  });
+  
+  producer.on('error', function (err) {});
+
+  consumer.on('message', (msg) => {
+    console.log(msg);
+    success = true;
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  clientProducer.close();
+
+
+  consumer.commit(() => {
+    clientConsumer.close();
+  });
+
+  client.close();
+
+  if(success){
+    console.log('SUCCESS');
+  }
+}
+
+
+module.exports();
+

@@ -11,9 +11,9 @@
     "axios": "^0.20.0",
     "cbor": "^5.1.0",
     "dotenv": "^8.2.0",
+    "kafka-node": "^5.0.0",
     "lodash": "^4.17.20",
     "mongodb": "^3.6.2",
-    "node-rdkafka": "^2.10.1",
     "sawtooth-sdk": "^1.0.5",
     "underscore": "^1.11.0"
   },
