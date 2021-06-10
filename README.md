@@ -56,3 +56,16 @@ In `./app/` there are scripts to test sawtooth, kafka and mongo.
 ## Suggestions
 Edit `up.sh` to only run the code that is required.
 Edit `./docker-compose/docker-compose.yaml` so that only the required containers are run
+
+
+## Postgres docker-compose
+
+```bash
+docker-compose -f ./docker-compose.yaml exec postgresql psql postgresql://postgres:postgres@localhost
+
+\l
+```
+pgAdmin
+http://localhost:9094/browser/
+user: a@a.com
+password: password123
