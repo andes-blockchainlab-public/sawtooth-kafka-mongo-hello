@@ -10,7 +10,8 @@ const crypto = require('crypto');
 const hash = (x) =>
   crypto.createHash('sha512').update(x).digest('hex').toLowerCase()
 
-const HOST = process.env.SAWTOOTH_HOST;
+const HOST = process.env.SAWTOOTH_REST;
+console.log(`HOST: ${HOST}`);
 
 const TP_FAMILY = 'tp1';
 const TP_vERSION = '1.0';

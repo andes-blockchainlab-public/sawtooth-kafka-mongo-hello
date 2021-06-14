@@ -1,3 +1,5 @@
+# Hello World Sawtooth, Kafka, Mongodb and postgresql
+
 ## Install Dependencies
 * [docker](https://docs.docker.com/engine/install/ubuntu/)
 * [docker-compose](https://docs.docker.com/compose/install/)
@@ -46,7 +48,10 @@ Deploys Kafka, Mongodb and Kafka.
 Mongo-express: http://localhost:8081
 Sawtooth-explorer: http://localhost:8091
 Sawtooth-rest-api: http://localhost:8008
-
+PgAdmin: http://localhost:9095
+  user: a@a.com
+  password: password123
+  Server Group 1/Minimally Defined Server/Databases/my_database
 
 ## Code:
 In `./app/` there are scripts to test sawtooth, kafka and mongo.
@@ -57,15 +62,3 @@ In `./app/` there are scripts to test sawtooth, kafka and mongo.
 Edit `up.sh` to only run the code that is required.
 Edit `./docker-compose/docker-compose.yaml` so that only the required containers are run
 
-
-## Postgres docker-compose
-
-```bash
-docker-compose -f ./docker-compose.yaml exec postgresql psql postgresql://postgres:postgres@localhost
-
-\l
-```
-pgAdmin
-http://localhost:9094/browser/
-user: a@a.com
-password: password123

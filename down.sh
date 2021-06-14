@@ -1,5 +1,5 @@
 #!/bin/bash
 
-cd ./docker-compose
+cd ./docker-compose-dev
   ./down.sh
 cd -

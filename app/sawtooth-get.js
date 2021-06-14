@@ -9,7 +9,7 @@ const privateKey = context.newRandomPrivateKey()
 const signer = (new CryptoFactory(context)).newSigner(privateKey)
 const crypto = require('crypto');
 
-const HOST = process.env.SAWTOOTH_HOST;
+const HOST = process.env.SAWTOOTH_REST;
 
 
 const hash = (x) =>
